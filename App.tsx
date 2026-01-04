@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import POS from './components/POS.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import ProductManager from './components/ProductManager.tsx';
@@ -6,7 +6,7 @@ import CategoryManager from './components/CategoryManager.tsx';
 import InvoiceHistory from './components/InvoiceHistory.tsx';
 import PeopleManager from './components/PeopleManager.tsx';
 import SettingsManager from './components/SettingsManager.tsx';
-import { Transaction, CartItem, ReceiptConfig, TaxServiceConfig, Product, Customer } from './types.ts';
+import { Transaction, CartItem, ReceiptConfig, TaxServiceConfig, Product, Customer, Supplier, User } from './types.ts';
 import { MOCK_PRODUCTS, INITIAL_TRANSACTIONS, MOCK_CUSTOMERS, MOCK_SUPPLIERS, MOCK_USERS } from './constants.ts';
 import { 
   LayoutDashboard, 
@@ -19,8 +19,7 @@ import {
   FileText, 
   Users, 
   Settings,
-  ChevronRight,
-  Bell
+  ChevronRight
 } from 'lucide-react';
 
 type ViewType = 'pos' | 'dashboard' | 'products' | 'categories' | 'invoices' | 'customers' | 'suppliers' | 'users' | 'settings';
@@ -30,6 +29,9 @@ const App: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(MOCK_SUPPLIERS);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -55,10 +57,10 @@ const App: React.FC = () => {
     logoUrl: undefined
   });
 
-  const handleCheckoutComplete = (items: CartItem[], subtotal: number, aiNote: string) => {
-    const taxAmount = taxConfig.isTaxEnabled ? (subtotal * taxConfig.taxPercentage / 100) : 0;
-    const serviceAmount = taxConfig.isServiceEnabled ? (subtotal * taxConfig.servicePercentage / 100) : 0;
-    const grandTotal = subtotal + taxAmount + serviceAmount;
+  const handleCheckoutComplete = (items: CartItem[], total: number, aiNote: string) => {
+    const taxAmount = taxConfig.isTaxEnabled ? (total * taxConfig.taxPercentage / 100) : 0;
+    const serviceAmount = taxConfig.isServiceEnabled ? (total * taxConfig.servicePercentage / 100) : 0;
+    const grandTotal = total + taxAmount + serviceAmount;
 
     const newTransaction: Transaction = {
       id: `INV-${Date.now().toString().slice(-6)}`,
@@ -68,7 +70,8 @@ const App: React.FC = () => {
       taxAmount,
       serviceAmount,
       aiNote,
-      customerName: "Umum"
+      customerName: "Umum",
+      paymentMethod: "Cash"
     };
 
     setTransactions(prev => [newTransaction, ...prev]);
@@ -84,24 +87,15 @@ const App: React.FC = () => {
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
+  const handleAddPerson = (type: string, person: any) => {
+    if (type === 'customer') setCustomers(prev => [person, ...prev]);
+    if (type === 'supplier') setSuppliers(prev => [person, ...prev]);
+    if (type === 'user') setUsers(prev => [person, ...prev]);
+  };
+
   const navigateTo = (view: ViewType) => {
     setCurrentView(view);
     setIsSidebarOpen(false);
-  };
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'pos': return <POS products={products} onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
-      case 'dashboard': return <Dashboard transactions={transactions} />;
-      case 'products': return <ProductManager products={products} onAdd={handleAddProduct} onDelete={handleDeleteProduct} />;
-      case 'categories': return <CategoryManager />;
-      case 'invoices': return <InvoiceHistory transactions={transactions} />;
-      case 'customers': return <PeopleManager type="customer" data={customers} />;
-      case 'suppliers': return <PeopleManager type="supplier" data={MOCK_SUPPLIERS} />;
-      case 'users': return <PeopleManager type="user" data={MOCK_USERS} />;
-      case 'settings': return <SettingsManager receiptConfig={receiptConfig} setReceiptConfig={setReceiptConfig} taxConfig={taxConfig} setTaxConfig={setTaxConfig} />;
-      default: return <POS products={products} onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
-    }
   };
 
   const NavItem = ({ view, icon: Icon, label }: { view: ViewType; icon: any; label: string }) => (
@@ -118,6 +112,21 @@ const App: React.FC = () => {
       {currentView === view && <ChevronRight size={14} className="ml-auto opacity-50" />}
     </button>
   );
+
+  const renderContent = () => {
+    switch (currentView) {
+      case 'pos': return <POS products={products} onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
+      case 'dashboard': return <Dashboard transactions={transactions} />;
+      case 'products': return <ProductManager products={products} onAdd={handleAddProduct} onDelete={handleDeleteProduct} />;
+      case 'categories': return <CategoryManager />;
+      case 'invoices': return <InvoiceHistory transactions={transactions} />;
+      case 'customers': return <PeopleManager type="customer" data={customers} onAdd={(p) => handleAddPerson('customer', p)} />;
+      case 'suppliers': return <PeopleManager type="supplier" data={suppliers} onAdd={(p) => handleAddPerson('supplier', p)} />;
+      case 'users': return <PeopleManager type="user" data={users} onAdd={(p) => handleAddPerson('user', p)} />;
+      case 'settings': return <SettingsManager receiptConfig={receiptConfig} setReceiptConfig={setReceiptConfig} taxConfig={taxConfig} setTaxConfig={setTaxConfig} />;
+      default: return <POS products={products} onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
+    }
+  };
 
   return (
     <div className="flex h-screen bg-white text-gray-800 font-sans overflow-hidden relative">
@@ -146,12 +155,14 @@ const App: React.FC = () => {
         <nav className="flex-1 w-full p-6 space-y-2 overflow-y-auto no-scrollbar">
           <NavItem view="pos" icon={Store} label="Kasir (POS)" />
           <NavItem view="dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem view="invoices" icon={FileText} label="Riwayat Transaksi" />
+          <NavItem view="invoices" icon={FileText} label="Transaksi" />
           
           <div className="pt-8 pb-3 text-[8px] font-black text-gray-300 px-4 uppercase tracking-[0.4em]">Master Data</div>
-          <NavItem view="products" icon={Box} label="Menu Produk" />
+          <NavItem view="products" icon={Box} label="Menu" />
           <NavItem view="categories" icon={Layers} label="Kategori" />
           <NavItem view="customers" icon={Users} label="Pelanggan" />
+          <NavItem view="suppliers" icon={Store} label="Pemasok" />
+          <NavItem view="users" icon={Users} label="Staf" />
 
           <div className="pt-8 pb-3 text-[8px] font-black text-gray-300 px-4 uppercase tracking-[0.4em]">Sistem</div>
           <NavItem view="settings" icon={Settings} label="Pengaturan" />
@@ -203,7 +214,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Modal Struk */}
+      {/* Modern Receipt Modal */}
       {showReceipt && lastTransaction && (
         <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in duration-500 border border-white/20">

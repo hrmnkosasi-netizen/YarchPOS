@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Product, CartItem, TaxServiceConfig } from '../types.ts';
 import { MOCK_CATEGORIES } from '../constants.ts';
-import { Plus, Minus, ShoppingBag, Loader2, Search, X, ChevronRight, Zap } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, Loader2, Search, X, ChevronRight, Zap, CreditCard, Banknote, QrCode } from 'lucide-react';
 import { generateReceiptMessage } from '../services/geminiService.ts';
 
 interface POSProps {
@@ -16,6 +16,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckoutComplete, taxConfig }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCartOpenMobile, setIsCartOpenMobile] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'QRIS' | 'Card'>('Cash');
 
   const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId);
 
@@ -90,26 +91,48 @@ const POS: React.FC<POSProps> = ({ products, onCheckoutComplete, taxConfig }) =>
             <p className="text-[10px] font-black uppercase tracking-[0.4em]">Empty Basket</p>
           </div>
         ) : (
-          cart.map(item => (
-            <div key={item.id} className="flex items-center gap-4 bg-white p-4 rounded-[1.75rem] border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
-              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 shrink-0 shadow-sm">
-                  <img src={item.image} alt="" className="w-full h-full object-cover transition-all" />
+          <div className="space-y-4">
+            {cart.map(item => (
+              <div key={item.id} className="flex items-center gap-4 bg-white p-4 rounded-[1.75rem] border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 shrink-0 shadow-sm">
+                    <img src={item.image} alt="" className="w-full h-full object-cover transition-all" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[11px] font-black text-gray-900 truncate uppercase tracking-tight italic">{item.name}</h4>
+                  <p className="text-[10px] text-indigo-600 font-black mt-0.5 tracking-tighter">Rp {item.price.toLocaleString('id-ID')}</p>
+                </div>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-1.5 shrink-0">
+                  <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all hover:shadow-sm">
+                    <Minus size={14} />
+                  </button>
+                  <span className="text-[11px] font-black w-6 text-center">{item.quantity}</span>
+                  <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700">
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-[11px] font-black text-gray-900 truncate uppercase tracking-tight italic">{item.name}</h4>
-                <p className="text-[10px] text-indigo-600 font-black mt-0.5 tracking-tighter">Rp {item.price.toLocaleString('id-ID')}</p>
-              </div>
-              <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-1.5 shrink-0">
-                <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all hover:shadow-sm">
-                  <Minus size={14} />
-                </button>
-                <span className="text-[11px] font-black w-6 text-center">{item.quantity}</span>
-                <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700">
-                  <Plus size={14} />
-                </button>
+            ))}
+            
+            <div className="pt-6 border-t border-gray-100 space-y-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Metode Pembayaran</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'Cash', icon: Banknote, label: 'Tunai' },
+                  { id: 'QRIS', icon: QrCode, label: 'QRIS' },
+                  { id: 'Card', icon: CreditCard, label: 'Debit/Kredit' }
+                ].map((method) => (
+                  <button
+                    key={method.id}
+                    onClick={() => setPaymentMethod(method.id as any)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${paymentMethod === method.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-white border-gray-100 text-gray-400 hover:bg-gray-50'}`}
+                  >
+                    <method.icon size={18} className="mb-1" />
+                    <span className="text-[8px] font-black uppercase tracking-widest">{method.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
-          ))
+          </div>
         )}
       </div>
 
@@ -230,6 +253,14 @@ const POS: React.FC<POSProps> = ({ products, onCheckoutComplete, taxConfig }) =>
               </div>
             ))}
           </div>
+          {filteredProducts.length === 0 && (
+             <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-6 py-40">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center border-4 border-dashed border-gray-100">
+                    <Zap size={32} className="opacity-10" />
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em]">Tidak ada menu ditemukan</p>
+             </div>
+          )}
         </div>
       </div>
 
@@ -251,7 +282,7 @@ const POS: React.FC<POSProps> = ({ products, onCheckoutComplete, taxConfig }) =>
                 </span>
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Grand Total</p>
+                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Total</p>
                 <p className="text-xl font-black tracking-tighter italic">Rp {total.toLocaleString('id-ID')}</p>
               </div>
             </div>

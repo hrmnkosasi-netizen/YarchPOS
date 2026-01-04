@@ -42,7 +42,7 @@ const InvoiceHistory: React.FC<InvoiceHistoryProps> = ({ transactions }) => {
                 <th className="px-10 py-6 font-black">Reference</th>
                 <th className="px-8 py-6 font-black">Settlement Date</th>
                 <th className="px-8 py-6 font-black">Customer Profile</th>
-                <th className="px-8 py-6 font-black">Items</th>
+                <th className="px-8 py-6 font-black">Method</th>
                 <th className="px-8 py-6 font-black text-right">Net Total</th>
                 <th className="px-8 py-6 font-black text-center">Status</th>
                 <th className="px-10 py-6 font-black text-center">Actions</th>
@@ -67,7 +67,7 @@ const InvoiceHistory: React.FC<InvoiceHistoryProps> = ({ transactions }) => {
                       </div>
                   </td>
                   <td className="px-8 py-6">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t.items.length} units listed</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t.paymentMethod || 'Cash'}</span>
                   </td>
                   <td className="px-8 py-6 text-right font-black text-gray-900 text-sm tracking-tighter italic">
                     Rp {t.total.toLocaleString('id-ID')}
@@ -119,7 +119,7 @@ const InvoiceHistory: React.FC<InvoiceHistoryProps> = ({ transactions }) => {
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
-                   <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{t.items.length} items purchased</p>
+                   <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">{t.items.length} items purchased • {t.paymentMethod || 'Cash'}</p>
                    <button className="flex items-center gap-1 text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-4 py-2 rounded-xl">Details <ChevronRight size={12} /></button>
                 </div>
              </div>

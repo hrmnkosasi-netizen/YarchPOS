@@ -1,139 +1,178 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Customer, Supplier, User as UserType } from '../types.ts';
-import { Users, Truck, ShieldCheck, Mail, Phone, MapPin, MoreHorizontal, User, Search, Plus } from 'lucide-react';
+import { Users, Truck, ShieldCheck, Mail, Phone, MapPin, MoreHorizontal, User, Search, Plus, Trash2, X } from 'lucide-react';
 
 type PeopleType = 'customer' | 'supplier' | 'user';
 
 interface PeopleManagerProps {
   type: PeopleType;
   data: (Customer | Supplier | UserType)[];
+  onAdd: (p: any) => void;
 }
 
-const PeopleManager: React.FC<PeopleManagerProps> = ({ type, data }) => {
+const PeopleManager: React.FC<PeopleManagerProps> = ({ type, data, onAdd }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ name: '', phone: '', email: '', detail: '' });
+
   const getHeader = () => {
     switch (type) {
-      case 'customer': return { title: 'Daftar Pelanggan', subtitle: 'Kelola data pelanggan dan poin loyalitas.', icon: Users };
-      case 'supplier': return { title: 'Daftar Supplier', subtitle: 'Kelola data pemasok bahan baku.', icon: Truck };
-      case 'user': return { title: 'Manajemen Pengguna', subtitle: 'Atur akses staf kasir dan manajer.', icon: ShieldCheck };
+      case 'customer': return { title: 'Daftar Pelanggan', subtitle: 'Kelola database pelanggan & loyalitas.', icon: Users, color: 'indigo' };
+      case 'supplier': return { title: 'Daftar Pemasok', subtitle: 'Manajemen distributor bahan baku.', icon: Truck, color: 'amber' };
+      case 'user': return { title: 'Daftar Pengguna', subtitle: 'Kontrol hak akses & akun staf.', icon: ShieldCheck, color: 'blue' };
     }
   };
 
   const header = getHeader();
   const Icon = header.icon;
 
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = Date.now().toString();
+    const newPerson = {
+        id,
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        points: 0,
+        role: type === 'user' ? 'Cashier' : undefined,
+        address: type === 'supplier' ? formData.detail : undefined
+    };
+    onAdd(newPerson);
+    setShowModal(false);
+    setFormData({ name: '', phone: '', email: '', detail: '' });
+  };
+
   const renderCardContent = (item: any) => {
     if (type === 'customer') {
         const c = item as Customer;
         return (
-            <>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                    <Phone size={14} /> {c.phone}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3 text-[11px] text-gray-500 font-bold uppercase tracking-tight">
+                    <Phone size={14} className="text-indigo-400" /> {c.phone}
                 </div>
-                {c.email && <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                    <Mail size={14} /> {c.email}
+                {c.email && <div className="flex items-center gap-3 text-[11px] text-gray-500 font-bold uppercase tracking-tight">
+                    <Mail size={14} className="text-indigo-400" /> {c.email}
                 </div>}
-                <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Loyalty Points</span>
-                    <span className="text-indigo-600 font-bold bg-indigo-50 px-2 py-1 rounded-md text-xs">{c.points} pts</span>
+                <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Loyalty Points</span>
+                    <span className="text-indigo-600 font-black bg-indigo-50 px-3 py-1.5 rounded-xl text-[10px] border border-indigo-100 italic">{c.points} PTS</span>
                 </div>
-            </>
+            </div>
         );
     }
     if (type === 'supplier') {
         const s = item as Supplier;
         return (
-            <>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                    <User size={14} /> CP: {s.contactPerson}
+            <div className="space-y-3">
+                <div className="flex items-center gap-3 text-[11px] text-gray-500 font-bold uppercase tracking-tight">
+                    <User size={14} className="text-amber-400" /> CP: {s.contactPerson || 'N/A'}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                    <Phone size={14} /> {s.phone}
+                <div className="flex items-center gap-3 text-[11px] text-gray-500 font-bold uppercase tracking-tight">
+                    <Phone size={14} className="text-amber-400" /> {s.phone}
                 </div>
-                <div className="flex items-start gap-2 text-sm text-gray-600 mt-1">
-                    <MapPin size={14} className="mt-0.5 min-w-[14px]" /> <span className="line-clamp-2">{s.address}</span>
+                <div className="flex items-start gap-3 text-[11px] text-gray-500 font-bold uppercase tracking-tight">
+                    <MapPin size={14} className="text-amber-400 shrink-0" /> <span className="line-clamp-2">{s.address}</span>
                 </div>
-            </>
+            </div>
         );
     }
     if (type === 'user') {
         const u = item as UserType;
         return (
-            <>
-                <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <div className="space-y-3">
+                <div className="inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border border-blue-100 italic">
                   {u.role}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 mt-3">
-                    <Mail size={14} /> {u.email}
+                <div className="flex items-center gap-3 text-[11px] text-gray-500 font-bold uppercase tracking-tight pt-2">
+                    <Mail size={14} className="text-blue-400" /> {u.email}
                 </div>
-            </>
+            </div>
         );
     }
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in max-w-[1600px] mx-auto">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <div className="flex items-center gap-3">
-            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl shadow-sm">
-                <Icon size={24} />
+    <div className="p-4 md:p-10 space-y-6 md:space-y-10 animate-fade-in max-w-[1600px] mx-auto">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+        <div className="flex items-center gap-4">
+            <div className={`p-4 bg-${header.color}-600 text-white rounded-[1.5rem] shadow-xl shadow-${header.color}-200`}>
+                <Icon size={28} />
             </div>
             <div>
-                <h2 className="text-2xl font-black text-gray-900 tracking-tight">{header.title}</h2>
-                <p className="text-gray-500 text-xs font-medium">{header.subtitle}</p>
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tighter italic uppercase">{header.title}</h2>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.3em]">{header.subtitle}</p>
             </div>
         </div>
         
-        <button className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95">
-          <Plus size={16} /> Tambah Data
+        <button 
+          onClick={() => setShowModal(true)}
+          className="w-full md:w-auto bg-gray-900 hover:bg-black text-white px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 shadow-2xl transition-all active:scale-95"
+        >
+          <Plus size={18} /> Daftarkan Baru
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative w-full md:flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
-            <input 
-              type="text" 
-              placeholder={`Cari nama ${type === 'user' ? 'pengguna' : type === 'supplier' ? 'supplier' : 'pelanggan'}...`} 
-              className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500" 
-            />
-        </div>
-        <div className="w-full md:w-auto flex gap-2">
-            <button className="flex-1 md:flex-none px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50">Filter</button>
-            <button className="flex-1 md:flex-none px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-50">Export</button>
-        </div>
-      </div>
-
-      {/* Grid Content */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {data.map((item: any) => (
-            <div key={item.id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative group cursor-pointer">
-                <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black shadow-inner ${
+            <div key={item.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 relative group cursor-pointer">
+                <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black italic border border-gray-50 shadow-inner ${
                             type === 'user' ? 'bg-blue-50 text-blue-600' :
-                            type === 'supplier' ? 'bg-orange-50 text-orange-600' :
+                            type === 'supplier' ? 'bg-amber-50 text-amber-600' :
                             'bg-indigo-50 text-indigo-600'
                         }`}>
                             {item.name.charAt(0)}
                         </div>
                         <div>
-                            <h3 className="font-black text-gray-800 text-sm">{item.name}</h3>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">ID: {item.id}</span>
+                            <h3 className="font-black text-gray-900 text-sm uppercase tracking-tighter italic leading-tight">{item.name}</h3>
+                            <span className="text-[9px] text-gray-300 font-black uppercase tracking-[0.2em] mt-1 block">ID: {item.id.slice(-6)}</span>
                         </div>
                     </div>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-                        <MoreHorizontal size={20} />
-                    </button>
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-gray-50 border-dashed">
+                <div className="pt-6 border-t border-gray-50 border-dashed relative">
                     {renderCardContent(item)}
+                    <div className="absolute top-6 right-0 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button className="p-2 text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                        <button className="p-2 text-gray-300 hover:text-gray-600 transition-colors"><MoreHorizontal size={16} /></button>
+                    </div>
                 </div>
             </div>
         ))}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-300">
+             <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h3 className="font-black text-xl uppercase italic tracking-tighter">Tambah Data {type}</h3>
+                <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-900 transition-all"><X size={24}/></button>
+             </div>
+             <form onSubmit={handleAddSubmit} className="p-10 space-y-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nama Lengkap</label>
+                   <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-4 bg-gray-50 border-none rounded-2xl font-black text-sm outline-none focus:ring-4 focus:ring-indigo-100 uppercase italic tracking-tight" placeholder="Masukan Nama..." />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nomor Telepon</label>
+                   <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full p-4 bg-gray-50 border-none rounded-2xl font-black text-sm outline-none focus:ring-4 focus:ring-indigo-100" placeholder="08..." />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email (Opsional)</label>
+                   <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full p-4 bg-gray-50 border-none rounded-2xl font-black text-sm outline-none focus:ring-4 focus:ring-indigo-100" placeholder="user@mail.com" />
+                </div>
+                {type === 'supplier' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Alamat Gudang</label>
+                    <textarea value={formData.detail} onChange={e => setFormData({...formData, detail: e.target.value})} className="w-full p-4 bg-gray-50 border-none rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-indigo-100" rows={2} placeholder="Alamat lengkap supplier..." />
+                  </div>
+                )}
+                <button type="submit" className="w-full bg-indigo-600 text-white py-5 rounded-[1.75rem] font-black uppercase text-[11px] tracking-widest shadow-2xl shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all">Daftarkan Sekarang</button>
+             </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
