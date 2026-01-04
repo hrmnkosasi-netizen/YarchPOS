@@ -1,12 +1,13 @@
+
 import React from 'react';
-import { Customer, Supplier, User } from '../types';
-import { Users, Truck, ShieldCheck, Mail, Phone, MapPin, MoreHorizontal } from 'lucide-react';
+import { Customer, Supplier, User as UserType } from '../types';
+import { Users, Truck, ShieldCheck, Mail, Phone, MapPin, MoreHorizontal, User } from 'lucide-react';
 
 type PeopleType = 'customer' | 'supplier' | 'user';
 
 interface PeopleManagerProps {
   type: PeopleType;
-  data: (Customer | Supplier | User)[];
+  data: (Customer | Supplier | UserType)[];
 }
 
 const PeopleManager: React.FC<PeopleManagerProps> = ({ type, data }) => {
@@ -44,6 +45,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ type, data }) => {
         return (
             <>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                    {/* Fixed: User is now correctly imported as a component from lucide-react */}
                     <User size={14} /> CP: {s.contactPerson}
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
@@ -56,7 +58,7 @@ const PeopleManager: React.FC<PeopleManagerProps> = ({ type, data }) => {
         );
     }
     if (type === 'user') {
-        const u = item as User;
+        const u = item as UserType;
         return (
             <>
                 <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

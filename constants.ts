@@ -1,6 +1,17 @@
-import { Product, Transaction, ProductCategory, Customer, Supplier, User } from './types';
+import { Product, Transaction, ProductCategory, Customer, Supplier, User, Outlet, PaymentMethod } from './types';
 
-// Categories with Hierarchy
+export const MOCK_OUTLETS: Outlet[] = [
+  { id: 'ot-1', name: 'Warung Pintar - Sudirman', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat', phone: '021-123456', email: 'sudirman@warung.com' },
+  { id: 'ot-2', name: 'Warung Pintar - Kemang', address: 'Jl. Kemang Raya No. 12, Jakarta Selatan', phone: '021-654321', email: 'kemang@warung.com' }
+];
+
+export const MOCK_PAYMENTS: PaymentMethod[] = [
+  { id: 'p1', name: 'Tunai (Cash)', type: 'Cash', isActive: true },
+  { id: 'p2', name: 'QRIS (Gopay/OVO)', type: 'E-Wallet', isActive: true },
+  { id: 'p3', name: 'Transfer Bank BCA', type: 'Transfer', isActive: true },
+  { id: 'p4', name: 'Kartu Kredit/Debit', type: 'Card', isActive: false },
+];
+
 export const MOCK_CATEGORIES: ProductCategory[] = [
   { id: 'cat-1', name: 'Makanan', parentId: null },
   { id: 'cat-2', name: 'Minuman', parentId: null },
@@ -50,53 +61,12 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'Non-Kopi',
     image: 'https://picsum.photos/id/439/300/300',
     date: '2024-02-02T11:15:00Z'
-  },
-  {
-    id: '5',
-    name: 'Pisang Bakar Keju',
-    price: 15000,
-    category: 'Cemilan',
-    image: 'https://picsum.photos/id/102/300/300',
-    date: '2024-02-10T14:00:00Z'
-  },
-  {
-    id: '6',
-    name: 'Kentang Goreng',
-    price: 12000,
-    category: 'Cemilan',
-    image: 'https://picsum.photos/id/486/300/300',
-    date: '2024-02-12T15:30:00Z'
-  },
-  {
-    id: '7',
-    name: 'Sate Ayam Madura',
-    price: 30000,
-    category: 'Makanan Berat',
-    image: 'https://picsum.photos/id/493/300/300',
-    date: '2024-03-01T17:00:00Z'
-  },
-  {
-    id: '8',
-    name: 'Jus Alpukat',
-    price: 15000,
-    category: 'Non-Kopi',
-    image: 'https://picsum.photos/id/1080/300/300',
-    date: '2024-03-05T12:00:00Z'
-  },
-  {
-    id: '9',
-    name: 'Brownies Coklat',
-    price: 10000,
-    category: 'Cemilan',
-    image: 'https://picsum.photos/id/299/300/300',
-    date: '2024-03-10T13:45:00Z'
   }
 ];
 
-// Generate some fake history for the dashboard
 export const INITIAL_TRANSACTIONS: Transaction[] = Array.from({ length: 20 }).map((_, i) => {
   const date = new Date();
-  date.setDate(date.getDate() - (i % 7)); // Spread over last 7 days
+  date.setDate(date.getDate() - (i % 7));
   
   return {
     id: `INV-${1000 + i}`,
@@ -111,16 +81,12 @@ export const INITIAL_TRANSACTIONS: Transaction[] = Array.from({ length: 20 }).ma
 export const MOCK_CUSTOMERS: Customer[] = [
     { id: 'c1', name: 'Budi Santoso', phone: '08123456789', points: 150, email: 'budi@example.com' },
     { id: 'c2', name: 'Siti Aminah', phone: '08987654321', points: 50, email: 'siti@example.com' },
-    { id: 'c3', name: 'Joko Widodo', phone: '08567891234', points: 320 },
 ];
 
 export const MOCK_SUPPLIERS: Supplier[] = [
     { id: 's1', name: 'PT. Pangan Sejahtera', contactPerson: 'Pak Harto', phone: '021-555666', address: 'Jl. Raya Bogor No. 1' },
-    { id: 's2', name: 'CV. Sayur Segar', contactPerson: 'Bu Sri', phone: '0811223344', address: 'Pasar Induk Kramat Jati' },
 ];
 
 export const MOCK_USERS: User[] = [
     { id: 'u1', name: 'Admin Utama', role: 'Admin', email: 'admin@warung.com' },
-    { id: 'u2', name: 'Kasir Pagi', role: 'Cashier', email: 'kasir1@warung.com' },
-    { id: 'u3', name: 'Manajer Operasional', role: 'Manager', email: 'manager@warung.com' },
 ];

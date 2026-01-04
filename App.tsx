@@ -5,6 +5,7 @@ import ProductManager from './components/ProductManager';
 import CategoryManager from './components/CategoryManager';
 import InvoiceHistory from './components/InvoiceHistory';
 import PeopleManager from './components/PeopleManager';
+import SettingsManager from './components/SettingsManager';
 import { Transaction, CartItem } from './types';
 import { MOCK_PRODUCTS, INITIAL_TRANSACTIONS, MOCK_CUSTOMERS, MOCK_SUPPLIERS, MOCK_USERS } from './constants';
 import { 
@@ -18,10 +19,11 @@ import {
   FileText, 
   Users, 
   Truck, 
-  ShieldCheck 
+  ShieldCheck,
+  Settings
 } from 'lucide-react';
 
-type ViewType = 'pos' | 'dashboard' | 'products' | 'categories' | 'invoices' | 'customers' | 'suppliers' | 'users';
+type ViewType = 'pos' | 'dashboard' | 'products' | 'categories' | 'invoices' | 'customers' | 'suppliers' | 'users' | 'settings';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('pos');
@@ -62,6 +64,8 @@ const App: React.FC = () => {
         return <PeopleManager type="supplier" data={MOCK_SUPPLIERS} />;
       case 'users':
         return <PeopleManager type="user" data={MOCK_USERS} />;
+      case 'settings':
+        return <SettingsManager />;
       default:
         return <POS onCheckoutComplete={handleCheckoutComplete} />;
     }
@@ -93,25 +97,28 @@ const App: React.FC = () => {
         </div>
 
         <nav className="flex-1 w-full p-4 space-y-1 overflow-y-auto no-scrollbar">
-          <div className="text-xs font-bold text-gray-400 px-3 mb-2 hidden lg:block uppercase tracking-wider">Utama</div>
+          <div className="text-xs font-bold text-gray-400 px-3 mb-2 hidden lg:block uppercase tracking-wider text-[10px]">Utama</div>
           <NavItem view="pos" icon={Store} label="Kasir (POS)" />
           <NavItem view="dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavItem view="invoices" icon={FileText} label="Invoice" />
           
-          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider">Produk</div>
+          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider text-[10px]">Produk</div>
           <NavItem view="products" icon={Box} label="Produk & Varian" />
           <NavItem view="categories" icon={Layers} label="Kategori Menu" />
 
-          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider">Data Master</div>
+          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider text-[10px]">Data Master</div>
           <NavItem view="customers" icon={Users} label="Pelanggan" />
           <NavItem view="suppliers" icon={Truck} label="Supplier" />
           <NavItem view="users" icon={ShieldCheck} label="Pengguna" />
+
+          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider text-[10px]">Sistem</div>
+          <NavItem view="settings" icon={Settings} label="Pengaturan" />
         </nav>
 
         <div className="p-4 w-full shrink-0">
-            <div className="hidden lg:flex p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white text-xs flex-col shadow-lg">
-                <span className="font-bold opacity-90">Status Sistem</span>
-                <span className="font-semibold flex items-center gap-1 mt-1"><div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div> Online v1.2</span>
+            <div className="hidden lg:flex p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white text-[10px] flex-col shadow-lg">
+                <span className="font-bold opacity-90">Sistem Online</span>
+                <span className="font-semibold flex items-center gap-1 mt-1"><div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div> v1.2.5</span>
             </div>
         </div>
       </aside>

@@ -14,17 +14,17 @@ export interface ProductVariant {
 export interface ProductCategory {
   id: string;
   name: string;
-  parentId?: string | null; // Untuk kategori bertingkat
+  parentId?: string | null;
 }
 
 export interface Product {
   id: string;
   name: string;
   price: number;
-  category: string; // Changed from enum to string to support dynamic categories
+  category: string;
   image: string;
   date: string;
-  variants?: ProductVariant[]; // Varian produk
+  variants?: ProductVariant[];
   stock?: number;
 }
 
@@ -35,21 +35,45 @@ export interface CartItem extends Product {
 
 export interface Transaction {
   id: string;
-  date: string; // ISO String
+  date: string;
   items: CartItem[];
   total: number;
   aiNote?: string;
   customerName?: string;
+  outletId?: string;
+  paymentMethod?: string;
+  taxAmount?: number;
+  serviceAmount?: number;
 }
 
-export interface SalesMetric {
-  date: string;
-  amount: number;
-}
-
-export interface CategoryMetric {
+// Settings Interfaces
+export interface Outlet {
+  id: string;
   name: string;
-  value: number;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  type: 'Cash' | 'E-Wallet' | 'Transfer' | 'Card';
+  isActive: boolean;
+}
+
+export interface TaxServiceConfig {
+  taxPercentage: number;
+  servicePercentage: number;
+  isTaxEnabled: boolean;
+  isServiceEnabled: boolean;
+}
+
+export interface ReceiptConfig {
+  headerText: string;
+  footerText: string;
+  showLogo: boolean;
+  showSocialMedia: boolean;
 }
 
 // Interfaces for People/Entities
