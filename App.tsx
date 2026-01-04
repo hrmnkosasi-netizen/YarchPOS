@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import POS from './components/POS.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import ProductManager from './components/ProductManager.tsx';
@@ -6,7 +6,7 @@ import CategoryManager from './components/CategoryManager.tsx';
 import InvoiceHistory from './components/InvoiceHistory.tsx';
 import PeopleManager from './components/PeopleManager.tsx';
 import SettingsManager from './components/SettingsManager.tsx';
-import { Transaction, CartItem, ReceiptConfig, TaxServiceConfig } from './types.ts';
+import { Transaction, CartItem, ReceiptConfig, TaxServiceConfig, Product, Customer } from './types.ts';
 import { MOCK_PRODUCTS, INITIAL_TRANSACTIONS, MOCK_CUSTOMERS, MOCK_SUPPLIERS, MOCK_USERS } from './constants.ts';
 import { 
   LayoutDashboard, 
@@ -28,6 +28,8 @@ type ViewType = 'pos' | 'dashboard' | 'products' | 'categories' | 'invoices' | '
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('pos');
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const [customers, setCustomers] = useState<Customer[]>(MOCK_CUSTOMERS);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -53,13 +55,13 @@ const App: React.FC = () => {
     logoUrl: undefined
   });
 
-  const handleCheckoutComplete = (items: CartItem[], total: number, aiNote: string) => {
-    const taxAmount = taxConfig.isTaxEnabled ? (total * taxConfig.taxPercentage / 100) : 0;
-    const serviceAmount = taxConfig.isServiceEnabled ? (total * taxConfig.servicePercentage / 100) : 0;
-    const grandTotal = total + taxAmount + serviceAmount;
+  const handleCheckoutComplete = (items: CartItem[], subtotal: number, aiNote: string) => {
+    const taxAmount = taxConfig.isTaxEnabled ? (subtotal * taxConfig.taxPercentage / 100) : 0;
+    const serviceAmount = taxConfig.isServiceEnabled ? (subtotal * taxConfig.servicePercentage / 100) : 0;
+    const grandTotal = subtotal + taxAmount + serviceAmount;
 
     const newTransaction: Transaction = {
-      id: `INV-${Date.now()}`,
+      id: `INV-${Date.now().toString().slice(-6)}`,
       date: new Date().toISOString(),
       items,
       total: grandTotal,
@@ -74,6 +76,14 @@ const App: React.FC = () => {
     setShowReceipt(true);
   };
 
+  const handleAddProduct = (newProduct: Product) => {
+    setProducts(prev => [newProduct, ...prev]);
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+  };
+
   const navigateTo = (view: ViewType) => {
     setCurrentView(view);
     setIsSidebarOpen(false);
@@ -81,16 +91,16 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (currentView) {
-      case 'pos': return <POS onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
+      case 'pos': return <POS products={products} onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
       case 'dashboard': return <Dashboard transactions={transactions} />;
-      case 'products': return <ProductManager products={MOCK_PRODUCTS} />;
+      case 'products': return <ProductManager products={products} onAdd={handleAddProduct} onDelete={handleDeleteProduct} />;
       case 'categories': return <CategoryManager />;
       case 'invoices': return <InvoiceHistory transactions={transactions} />;
-      case 'customers': return <PeopleManager type="customer" data={MOCK_CUSTOMERS} />;
+      case 'customers': return <PeopleManager type="customer" data={customers} />;
       case 'suppliers': return <PeopleManager type="supplier" data={MOCK_SUPPLIERS} />;
       case 'users': return <PeopleManager type="user" data={MOCK_USERS} />;
       case 'settings': return <SettingsManager receiptConfig={receiptConfig} setReceiptConfig={setReceiptConfig} taxConfig={taxConfig} setTaxConfig={setTaxConfig} />;
-      default: return <POS onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
+      default: return <POS products={products} onCheckoutComplete={handleCheckoutComplete} taxConfig={taxConfig} />;
     }
   };
 
@@ -136,10 +146,10 @@ const App: React.FC = () => {
         <nav className="flex-1 w-full p-6 space-y-2 overflow-y-auto no-scrollbar">
           <NavItem view="pos" icon={Store} label="Kasir (POS)" />
           <NavItem view="dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem view="invoices" icon={FileText} label="Transaksi" />
+          <NavItem view="invoices" icon={FileText} label="Riwayat Transaksi" />
           
           <div className="pt-8 pb-3 text-[8px] font-black text-gray-300 px-4 uppercase tracking-[0.4em]">Master Data</div>
-          <NavItem view="products" icon={Box} label="Menu" />
+          <NavItem view="products" icon={Box} label="Menu Produk" />
           <NavItem view="categories" icon={Layers} label="Kategori" />
           <NavItem view="customers" icon={Users} label="Pelanggan" />
 
@@ -154,7 +164,7 @@ const App: React.FC = () => {
               <p className="text-[9px] font-black text-gray-900 uppercase tracking-widest leading-none">Gemini 2.0</p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Connected</span>
+                <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Active</span>
               </div>
             </div>
           </div>
@@ -176,18 +186,13 @@ const App: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
-                <button className="hidden sm:flex p-3 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all relative">
-                    <Bell size={20} />
-                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-                <div className="h-10 w-[1px] bg-gray-100 hidden sm:block"></div>
                 <div className="flex items-center gap-3 cursor-pointer group">
                     <div className="hidden sm:flex flex-col items-end">
                       <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Admin Utama</span>
                       <span className="text-[8px] text-gray-400 font-bold uppercase">Super User</span>
                     </div>
                     <div className="w-11 h-11 rounded-2xl bg-indigo-50 overflow-hidden border-2 border-white shadow-xl shadow-indigo-100 ring-1 ring-gray-100 transition-transform group-hover:scale-105">
-                        <img src="https://picsum.photos/id/64/100/100" alt="User" className="w-full h-full object-cover grayscale" />
+                        <img src="https://picsum.photos/id/64/100/100" alt="User" className="w-full h-full object-cover" />
                     </div>
                 </div>
             </div>
@@ -198,7 +203,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Modal Struk Premium */}
+      {/* Modal Struk */}
       {showReceipt && lastTransaction && (
         <div className="fixed inset-0 bg-gray-900/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3.5rem] shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in duration-500 border border-white/20">

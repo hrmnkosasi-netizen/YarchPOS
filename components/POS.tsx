@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Product, CartItem, TaxServiceConfig } from '../types.ts';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '../constants.ts';
-import { Plus, Minus, ShoppingBag, Loader2, Search, X, ChevronUp, ChevronRight, Zap } from 'lucide-react';
+import { MOCK_CATEGORIES } from '../constants.ts';
+import { Plus, Minus, ShoppingBag, Loader2, Search, X, ChevronRight, Zap } from 'lucide-react';
 import { generateReceiptMessage } from '../services/geminiService.ts';
 
 interface POSProps {
-  onCheckoutComplete: (items: CartItem[], total: number, aiNote: string) => void;
+  products: Product[];
+  onCheckoutComplete: (items: CartItem[], subtotal: number, aiNote: string) => void;
   taxConfig: TaxServiceConfig;
 }
 
-const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
+const POS: React.FC<POSProps> = ({ products, onCheckoutComplete, taxConfig }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +19,7 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
 
   const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId);
 
-  const filteredProducts = MOCK_PRODUCTS.filter(product => {
+  const filteredProducts = products.filter(product => {
     const matchesCategory = selectedCategoryName === 'All' || product.category === selectedCategoryName;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -71,9 +72,9 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
         <div>
             <h2 className="text-xl font-black text-gray-900 tracking-tighter italic uppercase flex items-center gap-2">
               <ShoppingBag size={20} className="text-indigo-600" />
-              Detail Pesanan
+              Keranjang
             </h2>
-            <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mt-0.5">Selection Review</p>
+            <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mt-0.5">Order Review</p>
         </div>
         <button onClick={() => setIsCartOpenMobile(false)} className="lg:hidden p-3 text-gray-400 hover:text-gray-900 bg-gray-50 rounded-2xl transition-all">
           <X size={20} />
@@ -92,7 +93,7 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
           cart.map(item => (
             <div key={item.id} className="flex items-center gap-4 bg-white p-4 rounded-[1.75rem] border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
               <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 shrink-0 shadow-sm">
-                  <img src={item.image} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                  <img src={item.image} alt="" className="w-full h-full object-cover transition-all" />
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-[11px] font-black text-gray-900 truncate uppercase tracking-tight italic">{item.name}</h4>
@@ -124,6 +125,12 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
               <span className="font-bold">Rp {tax.toLocaleString('id-ID')}</span>
             </div>
           )}
+          {taxConfig.isServiceEnabled && (
+            <div className="flex justify-between items-center text-[10px] font-black text-gray-300 uppercase tracking-widest">
+              <span>Biaya Layanan</span>
+              <span className="font-bold">Rp {service.toLocaleString('id-ID')}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center text-2xl font-black text-gray-900 pt-4 italic tracking-tighter">
             <span>TOTAL</span>
             <span className="text-indigo-600">Rp {total.toLocaleString('id-ID')}</span>
@@ -147,7 +154,7 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
           ) : (
             <>
                 <Zap size={18} className="text-indigo-300" />
-                <span>Konfirmasi Pembayaran</span>
+                <span>Bayar Sekarang</span>
             </>
           )}
         </button>
@@ -206,7 +213,7 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
                 className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-gray-200 transition-all duration-500 active:scale-95 group flex flex-col relative"
               >
                 <div className="aspect-square bg-gray-100 overflow-hidden relative">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 grayscale group-hover:grayscale-0" />
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 right-4">
                     <div className="bg-white/90 backdrop-blur-md w-10 h-10 rounded-2xl flex items-center justify-center text-indigo-600 shadow-xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
                       <Plus size={20} />
@@ -223,14 +230,6 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
               </div>
             ))}
           </div>
-          {filteredProducts.length === 0 && (
-             <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-6 py-40">
-                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center border-4 border-dashed border-gray-100">
-                    <Zap size={32} className="opacity-10" />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em]">Tidak ada menu ditemukan</p>
-             </div>
-          )}
         </div>
       </div>
 
