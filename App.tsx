@@ -1,23 +1,42 @@
 import React, { useState } from 'react';
 import POS from './components/POS';
 import Dashboard from './components/Dashboard';
+import ProductManager from './components/ProductManager';
+import CategoryManager from './components/CategoryManager';
+import InvoiceHistory from './components/InvoiceHistory';
+import PeopleManager from './components/PeopleManager';
 import { Transaction, CartItem } from './types';
-import { INITIAL_TRANSACTIONS } from './constants';
-import { LayoutDashboard, Store, X, CheckCircle, Receipt } from 'lucide-react';
+import { MOCK_PRODUCTS, INITIAL_TRANSACTIONS, MOCK_CUSTOMERS, MOCK_SUPPLIERS, MOCK_USERS } from './constants';
+import { 
+  LayoutDashboard, 
+  Store, 
+  X, 
+  CheckCircle, 
+  Receipt, 
+  Box, 
+  Layers, 
+  FileText, 
+  Users, 
+  Truck, 
+  ShieldCheck 
+} from 'lucide-react';
+
+type ViewType = 'pos' | 'dashboard' | 'products' | 'categories' | 'invoices' | 'customers' | 'suppliers' | 'users';
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'pos' | 'dashboard'>('pos');
+  const [currentView, setCurrentView] = useState<ViewType>('pos');
   const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
 
   const handleCheckoutComplete = (items: CartItem[], total: number, aiNote: string) => {
     const newTransaction: Transaction = {
-      id: `tr-${Date.now()}`,
+      id: `INV-${Date.now()}`,
       date: new Date().toISOString(),
       items,
       total,
-      aiNote
+      aiNote,
+      customerName: "Umum"
     };
 
     setTransactions(prev => [...prev, newTransaction]);
@@ -25,47 +44,74 @@ const App: React.FC = () => {
     setShowReceipt(true);
   };
 
+  const renderContent = () => {
+    switch (currentView) {
+      case 'pos':
+        return <POS onCheckoutComplete={handleCheckoutComplete} />;
+      case 'dashboard':
+        return <Dashboard transactions={transactions} />;
+      case 'products':
+        return <ProductManager products={MOCK_PRODUCTS} />;
+      case 'categories':
+        return <CategoryManager />;
+      case 'invoices':
+        return <InvoiceHistory transactions={transactions} />;
+      case 'customers':
+        return <PeopleManager type="customer" data={MOCK_CUSTOMERS} />;
+      case 'suppliers':
+        return <PeopleManager type="supplier" data={MOCK_SUPPLIERS} />;
+      case 'users':
+        return <PeopleManager type="user" data={MOCK_USERS} />;
+      default:
+        return <POS onCheckoutComplete={handleCheckoutComplete} />;
+    }
+  };
+
+  const NavItem = ({ view, icon: Icon, label }: { view: ViewType; icon: any; label: string }) => (
+    <button
+      onClick={() => setCurrentView(view)}
+      className={`w-full flex items-center justify-center lg:justify-start gap-3 p-3 rounded-xl transition-all text-sm font-medium ${
+        currentView === view 
+          ? 'bg-indigo-50 text-indigo-600' 
+          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+      }`}
+    >
+      <Icon size={20} />
+      <span className="hidden lg:block">{label}</span>
+    </button>
+  );
+
   return (
     <div className="flex h-screen bg-gray-100 text-gray-800 font-sans overflow-hidden">
       {/* Sidebar Navigation */}
       <aside className="w-20 lg:w-64 bg-white border-r border-gray-200 flex flex-col items-center lg:items-start transition-all duration-300 z-30">
-        <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 w-full border-b border-gray-100">
+        <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 w-full border-b border-gray-100 shrink-0">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
             <Store className="text-white" size={18} />
           </div>
           <span className="hidden lg:block ml-3 font-bold text-gray-800 text-lg">Warung<span className="text-indigo-600">AI</span></span>
         </div>
 
-        <nav className="flex-1 w-full p-4 space-y-2">
-          <button
-            onClick={() => setCurrentView('pos')}
-            className={`w-full flex items-center justify-center lg:justify-start gap-3 p-3 rounded-xl transition-all ${
-              currentView === 'pos' 
-                ? 'bg-indigo-50 text-indigo-600 font-semibold' 
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-          >
-            <Store size={22} />
-            <span className="hidden lg:block">Kasir</span>
-          </button>
+        <nav className="flex-1 w-full p-4 space-y-1 overflow-y-auto no-scrollbar">
+          <div className="text-xs font-bold text-gray-400 px-3 mb-2 hidden lg:block uppercase tracking-wider">Utama</div>
+          <NavItem view="pos" icon={Store} label="Kasir (POS)" />
+          <NavItem view="dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <NavItem view="invoices" icon={FileText} label="Invoice" />
           
-          <button
-            onClick={() => setCurrentView('dashboard')}
-            className={`w-full flex items-center justify-center lg:justify-start gap-3 p-3 rounded-xl transition-all ${
-              currentView === 'dashboard' 
-                ? 'bg-indigo-50 text-indigo-600 font-semibold' 
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-          >
-            <LayoutDashboard size={22} />
-            <span className="hidden lg:block">Laporan</span>
-          </button>
+          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider">Produk</div>
+          <NavItem view="products" icon={Box} label="Produk & Varian" />
+          <NavItem view="categories" icon={Layers} label="Kategori Menu" />
+
+          <div className="mt-6 mb-2 text-xs font-bold text-gray-400 px-3 hidden lg:block uppercase tracking-wider">Data Master</div>
+          <NavItem view="customers" icon={Users} label="Pelanggan" />
+          <NavItem view="suppliers" icon={Truck} label="Supplier" />
+          <NavItem view="users" icon={ShieldCheck} label="Pengguna" />
         </nav>
 
-        <div className="p-4 w-full">
-            <div className="hidden lg:flex p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white text-xs flex-col">
-                <span className="font-bold opacity-80">Status</span>
-                <span className="font-semibold flex items-center gap-1 mt-1"><div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div> Online</span>
+        <div className="p-4 w-full shrink-0">
+            <div className="hidden lg:flex p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white text-xs flex-col shadow-lg">
+                <span className="font-bold opacity-90">Status Sistem</span>
+                <span className="font-semibold flex items-center gap-1 mt-1"><div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div> Online v1.2</span>
             </div>
         </div>
       </aside>
@@ -73,8 +119,8 @@ const App: React.FC = () => {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 lg:px-8 shrink-0">
-            <h1 className="text-xl font-bold text-gray-800">
-                {currentView === 'pos' ? 'Point of Sales' : 'Ringkasan Bisnis'}
+            <h1 className="text-xl font-bold text-gray-800 capitalize">
+                {currentView.replace('-', ' ')}
             </h1>
             <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-500 hidden md:block">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -85,11 +131,7 @@ const App: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-auto bg-gray-50 relative">
-           {currentView === 'pos' ? (
-             <POS onCheckoutComplete={handleCheckoutComplete} />
-           ) : (
-             <Dashboard transactions={transactions} />
-           )}
+           {renderContent()}
         </div>
       </main>
 

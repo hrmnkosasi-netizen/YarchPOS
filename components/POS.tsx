@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Product, CartItem, Category } from '../types';
-import { MOCK_PRODUCTS } from '../constants';
-import { Plus, Minus, Trash2, ShoppingBag, Loader2, Sparkles } from 'lucide-react';
+import { Product, CartItem } from '../types';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '../constants';
+import { Plus, Minus, Trash2, ShoppingBag, Loader2, Sparkles, ChevronDown } from 'lucide-react';
 import { generateReceiptMessage } from '../services/geminiService';
 
 interface POSProps {
@@ -10,12 +10,19 @@ interface POSProps {
 
 const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'All'>('All');
+  // Use category ID or Name, simpler to just use Name for this mockup filter
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Simple flatten categories for the filter bar (taking only parent categories for simplicity)
+  const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId);
+
   const filteredProducts = MOCK_PRODUCTS.filter(product => {
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesCategory = selectedCategoryName === 'All' || product.category === selectedCategoryName || 
+                            // Check if product category is a sub-category of selected
+                            MOCK_CATEGORIES.find(c => c.name === product.category)?.parentId === MOCK_CATEGORIES.find(c => c.name === selectedCategoryName)?.id;
+    
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -78,20 +85,32 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
           
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
             <button 
-              onClick={() => setSelectedCategory('All')}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === 'All' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              onClick={() => setSelectedCategoryName('All')}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === 'All' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               Semua
             </button>
-            {Object.values(Category).map(cat => (
+            {parentCategories.map(cat => (
               <button 
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                key={cat.id}
+                onClick={() => setSelectedCategoryName(cat.name)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === cat.name ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               >
-                {cat}
+                {cat.name}
               </button>
             ))}
+             {/* Render explicitly named categories from products that might not be in the mock category tree for robustness */}
+             {Array.from(new Set(MOCK_PRODUCTS.map(p => p.category)))
+                .filter(c => !parentCategories.find(pc => pc.name === c))
+                .map(c => (
+                 <button 
+                    key={c}
+                    onClick={() => setSelectedCategoryName(c)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === c ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                    {c}
+                </button>
+             ))}
           </div>
         </div>
 
@@ -102,7 +121,7 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
               <div 
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow group"
+                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow group relative"
               >
                 <div className="h-32 bg-gray-200 overflow-hidden relative">
                   <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -114,6 +133,12 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
                   <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-2">{product.name}</h3>
                   <p className="text-indigo-600 font-bold mt-1">Rp{product.price.toLocaleString('id-ID')}</p>
                 </div>
+                {/* Variant Indicator */}
+                {product.variants && product.variants.length > 0 && (
+                     <div className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
+                        {product.variants.length} Varian
+                     </div>
+                )}
               </div>
             ))}
           </div>
