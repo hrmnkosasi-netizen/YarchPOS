@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
-import { Product, CartItem } from '../types';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '../constants';
-import { Plus, Minus, Trash2, ShoppingBag, Loader2, Sparkles, ChevronDown, Search } from 'lucide-react';
-import { generateReceiptMessage } from '../services/geminiService';
+import { Product, CartItem, TaxServiceConfig } from '../types.ts';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '../constants.ts';
+import { Plus, Minus, ShoppingBag, Loader2, Search, X, ChevronUp, ChevronRight, Zap } from 'lucide-react';
+import { generateReceiptMessage } from '../services/geminiService.ts';
 
 interface POSProps {
   onCheckoutComplete: (items: CartItem[], total: number, aiNote: string) => void;
+  taxConfig: TaxServiceConfig;
 }
 
-const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
+const POS: React.FC<POSProps> = ({ onCheckoutComplete, taxConfig }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCartOpenMobile, setIsCartOpenMobile] = useState(false);
 
   const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId);
 
   const filteredProducts = MOCK_PRODUCTS.filter(product => {
-    const matchesCategory = selectedCategoryName === 'All' || product.category === selectedCategoryName || 
-                            MOCK_CATEGORIES.find(c => c.name === product.category)?.parentId === MOCK_CATEGORIES.find(c => c.name === selectedCategoryName)?.id;
-    
+    const matchesCategory = selectedCategoryName === 'All' || product.category === selectedCategoryName;
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -46,168 +46,234 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
     }).filter(item => item.quantity > 0));
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const tax = taxConfig.isTaxEnabled ? (subtotal * taxConfig.taxPercentage / 100) : 0;
+  const service = taxConfig.isServiceEnabled ? (subtotal * taxConfig.servicePercentage / 100) : 0;
+  const total = subtotal + tax + service;
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
     setIsProcessing(true);
 
-    const aiMessage = await generateReceiptMessage(cart, cartTotal);
+    const aiMessage = await generateReceiptMessage(cart, total);
     
     setTimeout(() => {
-      onCheckoutComplete(cart, cartTotal, aiMessage);
+      onCheckoutComplete(cart, subtotal, aiMessage);
       setCart([]);
       setIsProcessing(false);
-    }, 800);
+      setIsCartOpenMobile(false);
+    }, 1200);
   };
 
-  return (
-    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
-      {/* Product Grid Area */}
-      <div className="flex-1 flex flex-col min-h-0">
-        {/* Search & Categories Bar */}
-        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 p-3 md:p-4 shadow-sm">
-          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-4">
-            <h2 className="text-lg md:text-xl font-bold text-gray-800 hidden sm:block">Daftar Menu</h2>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Cari menu..." 
-                className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none w-full text-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+  const CartContent = () => (
+    <div className="flex flex-col h-full bg-white relative">
+      <div className="p-6 bg-white border-b border-gray-100 flex items-center justify-between sticky top-0 z-10">
+        <div>
+            <h2 className="text-xl font-black text-gray-900 tracking-tighter italic uppercase flex items-center gap-2">
+              <ShoppingBag size={20} className="text-indigo-600" />
+              Detail Pesanan
+            </h2>
+            <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mt-0.5">Selection Review</p>
+        </div>
+        <button onClick={() => setIsCartOpenMobile(false)} className="lg:hidden p-3 text-gray-400 hover:text-gray-900 bg-gray-50 rounded-2xl transition-all">
+          <X size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
+        {cart.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-6 opacity-20 py-20">
+            <div className="w-24 h-24 bg-gray-50 rounded-[2.5rem] flex items-center justify-center border-4 border-dashed border-gray-200">
+              <ShoppingBag size={48} />
             </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em]">Empty Basket</p>
           </div>
-          
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            <button 
-              onClick={() => setSelectedCategoryName('All')}
-              className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === 'All' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-            >
-              Semua
-            </button>
-            {parentCategories.map(cat => (
+        ) : (
+          cart.map(item => (
+            <div key={item.id} className="flex items-center gap-4 bg-white p-4 rounded-[1.75rem] border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 shrink-0 shadow-sm">
+                  <img src={item.image} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-[11px] font-black text-gray-900 truncate uppercase tracking-tight italic">{item.name}</h4>
+                <p className="text-[10px] text-indigo-600 font-black mt-0.5 tracking-tighter">Rp {item.price.toLocaleString('id-ID')}</p>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-1.5 shrink-0">
+                <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all hover:shadow-sm">
+                  <Minus size={14} />
+                </button>
+                <span className="text-[11px] font-black w-6 text-center">{item.quantity}</span>
+                <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700">
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="p-8 bg-white border-t border-gray-100 space-y-6 sticky bottom-0">
+        <div className="space-y-2 border-b border-gray-50 pb-6">
+          <div className="flex justify-between items-center text-[11px] font-black text-gray-400 uppercase tracking-widest">
+            <span>Subtotal</span>
+            <span className="text-gray-900 font-black">Rp {subtotal.toLocaleString('id-ID')}</span>
+          </div>
+          {taxConfig.isTaxEnabled && (
+            <div className="flex justify-between items-center text-[10px] font-black text-gray-300 uppercase tracking-widest">
+              <span>Pajak ({taxConfig.taxPercentage}%)</span>
+              <span className="font-bold">Rp {tax.toLocaleString('id-ID')}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-center text-2xl font-black text-gray-900 pt-4 italic tracking-tighter">
+            <span>TOTAL</span>
+            <span className="text-indigo-600">Rp {total.toLocaleString('id-ID')}</span>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleCheckout}
+          disabled={cart.length === 0 || isProcessing}
+          className={`w-full py-5 rounded-[1.75rem] font-black flex items-center justify-center gap-3 transition-all active:scale-[0.97] shadow-2xl relative overflow-hidden group uppercase text-[11px] tracking-widest ${
+            cart.length === 0 
+            ? 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100' 
+            : 'bg-indigo-600 hover:bg-black text-white shadow-indigo-200'
+          }`}
+        >
+          {isProcessing ? (
+            <div className="flex items-center gap-3">
+                <Loader2 className="animate-spin" size={18} />
+                <span>Processing...</span>
+            </div>
+          ) : (
+            <>
+                <Zap size={18} className="text-indigo-300" />
+                <span>Konfirmasi Pembayaran</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col lg:flex-row h-full overflow-hidden bg-white lg:bg-gray-50/10 relative">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="sticky top-0 z-20 bg-white border-b border-gray-100 p-6 md:p-8">
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-black text-gray-900 italic tracking-tighter uppercase leading-none">Pilih<span className="text-indigo-600">Menu</span></h2>
+                    <p className="text-[10px] text-gray-300 font-black uppercase tracking-[0.3em] mt-1.5">Fresh inventory items</p>
+                </div>
+                <div className="relative w-full md:w-80">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={16} />
+                    <input 
+                      type="text" 
+                      placeholder="Cari makanan..." 
+                      className="pl-12 pr-4 py-3.5 rounded-2xl bg-gray-50 border-none focus:ring-4 focus:ring-indigo-50 shadow-inner outline-none w-full text-xs font-black uppercase tracking-wider transition-all"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+            
+            <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-2 px-2 pb-1">
               <button 
-                key={cat.id}
-                onClick={() => setSelectedCategoryName(cat.name)}
-                className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === cat.name ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                onClick={() => setSelectedCategoryName('All')}
+                className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${selectedCategoryName === 'All' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 italic scale-105' : 'bg-white border border-gray-100 text-gray-400 hover:bg-gray-50'}`}
               >
-                {cat.name}
+                Semua Menu
               </button>
-            ))}
+              {parentCategories.map(cat => (
+                <button 
+                  key={cat.id}
+                  onClick={() => setSelectedCategoryName(cat.name)}
+                  className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${selectedCategoryName === cat.name ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-100 italic scale-105' : 'bg-white border border-gray-100 text-gray-400 hover:bg-gray-50'}`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Scrollable Grid */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-4 no-scrollbar">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar pb-32 lg:pb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 md:gap-10">
             {filteredProducts.map(product => (
               <div 
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg transition-all active:scale-95 group relative flex flex-col"
+                className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-2xl hover:shadow-gray-200 transition-all duration-500 active:scale-95 group flex flex-col relative"
               >
                 <div className="aspect-square bg-gray-100 overflow-hidden relative">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-700">
-                    {product.category}
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 grayscale group-hover:grayscale-0" />
+                  <div className="absolute top-4 right-4">
+                    <div className="bg-white/90 backdrop-blur-md w-10 h-10 rounded-2xl flex items-center justify-center text-indigo-600 shadow-xl opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                      <Plus size={20} />
+                    </div>
                   </div>
                 </div>
-                <div className="p-3 flex-1 flex flex-col justify-between">
-                  <h3 className="font-semibold text-gray-800 text-xs md:text-sm line-clamp-2 leading-tight">{product.name}</h3>
-                  <p className="text-indigo-600 font-bold mt-1 text-sm md:text-base">Rp{product.price.toLocaleString('id-ID')}</p>
+                <div className="p-6">
+                  <p className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1.5">{product.category}</p>
+                  <h3 className="font-black text-gray-900 text-xs md:text-sm line-clamp-2 min-h-[2.5rem] leading-tight uppercase tracking-tighter italic">{product.name}</h3>
+                  <div className="mt-4 flex items-center justify-between">
+                    <p className="text-indigo-600 font-black text-base tracking-tighter">Rp {product.price.toLocaleString('id-ID')}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Cart Sidebar - Bottom Sheet on Mobile, Right Sidebar on Desktop */}
-      <div className="w-full lg:w-[400px] bg-white lg:border-l border-gray-200 flex flex-col h-[350px] lg:h-full z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] lg:shadow-none">
-        <div className="p-4 bg-gray-50/50 border-b border-gray-200 flex items-center justify-between shrink-0">
-          <h2 className="text-base md:text-lg font-bold text-gray-800 flex items-center gap-2">
-            <ShoppingBag size={18} className="text-indigo-600" />
-            Keranjang Belanja
-          </h2>
-          <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{cart.length} Item</span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
-          {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 opacity-50">
-              <ShoppingBag size={48} />
-              <p className="text-sm">Keranjang masih kosong</p>
-            </div>
-          ) : (
-            cart.map(item => (
-              <div key={item.id} className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-50 shadow-sm">
-                <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-100 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-xs md:text-sm font-medium text-gray-800 truncate">{item.name}</h4>
-                  <p className="text-[10px] md:text-xs text-indigo-600 font-bold">Rp{item.price.toLocaleString('id-ID')}</p>
+          {filteredProducts.length === 0 && (
+             <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-6 py-40">
+                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center border-4 border-dashed border-gray-100">
+                    <Zap size={32} className="opacity-10" />
                 </div>
-                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }}
-                    className="w-7 h-7 rounded-md bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-red-500 transition-colors"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <span className="text-xs font-bold w-5 text-center">{item.quantity}</span>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }}
-                    className="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 transition-colors"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-            ))
+                <p className="text-[10px] font-black uppercase tracking-[0.4em]">Tidak ada menu ditemukan</p>
+             </div>
           )}
         </div>
+      </div>
 
-        <div className="p-4 bg-white border-t border-gray-200 space-y-3 shrink-0">
-          <div className="space-y-1">
-            <div className="flex justify-between items-center text-xs text-gray-500">
-              <span>Subtotal</span>
-              <span>Rp{cartTotal.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between items-center text-lg font-black text-gray-900">
-              <span>Total Akhir</span>
-              <span className="text-indigo-600">Rp{cartTotal.toLocaleString('id-ID')}</span>
-            </div>
-          </div>
-          
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isProcessing}
-            className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
-              cart.length === 0 
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100'
-            }`}
+      <div className="hidden lg:flex w-[420px] border-l border-gray-100 shrink-0 bg-white">
+        <CartContent />
+      </div>
+
+      {cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-6 left-6 right-6 z-[40] animate-in slide-in-from-bottom-10 duration-500">
+          <button 
+            onClick={() => setIsCartOpenMobile(true)}
+            className="w-full bg-gray-900 text-white rounded-[2.5rem] p-5 shadow-2xl flex items-center justify-between group active:scale-95 transition-transform"
           >
-            {isProcessing ? (
-              <>
-                <Loader2 className="animate-spin" size={18} />
-                Memproses...
-              </>
-            ) : (
-              <>
-                Bayar Sekarang
-              </>
-            )}
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center relative shadow-lg shadow-indigo-600/20">
+                <ShoppingBag size={24} />
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-gray-900">
+                  {cart.length}
+                </span>
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black uppercase text-gray-500 tracking-widest">Grand Total</p>
+                <p className="text-xl font-black tracking-tighter italic">Rp {total.toLocaleString('id-ID')}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pr-2 opacity-60 group-hover:opacity-100 transition-opacity">
+              <span className="text-[10px] font-black uppercase tracking-widest">Detail</span>
+              <ChevronRight size={18} />
+            </div>
           </button>
-          
-          <div className="text-center text-[10px] text-gray-400 flex items-center justify-center gap-1">
-            <Sparkles size={10} className="text-indigo-400" />
-            Didukung Kecerdasan Gemini AI
+        </div>
+      )}
+
+      {isCartOpenMobile && (
+        <div className="lg:hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="absolute inset-x-0 bottom-0 h-[90vh] bg-white rounded-t-[4rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-full duration-600 flex flex-col">
+            <div className="w-16 h-1.5 bg-gray-100 rounded-full mx-auto my-4 shrink-0"></div>
+            <div className="flex-1 overflow-hidden">
+              <CartContent />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

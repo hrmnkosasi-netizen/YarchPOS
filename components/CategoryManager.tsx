@@ -1,7 +1,7 @@
 import React from 'react';
-import { ProductCategory } from '../types';
-import { MOCK_CATEGORIES } from '../constants';
-import { FolderTree, ChevronRight, Edit2, PlusCircle } from 'lucide-react';
+import { ProductCategory } from '../types.ts';
+import { MOCK_CATEGORIES } from '../constants.ts';
+import { FolderTree, Edit2, PlusCircle } from 'lucide-react';
 
 const CategoryManager: React.FC = () => {
   // Simple recursive renderer for tree structure

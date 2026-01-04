@@ -1,4 +1,4 @@
-import { Product, Transaction, ProductCategory, Customer, Supplier, User, Outlet, PaymentMethod } from './types';
+import { Product, Transaction, ProductCategory, Customer, Supplier, User, Outlet, PaymentMethod } from './types.ts';
 
 export const MOCK_OUTLETS: Outlet[] = [
   { id: 'ot-1', name: 'Warung Pintar - Sudirman', address: 'Jl. Jend. Sudirman No. 45, Jakarta Pusat', phone: '021-123456', email: 'sudirman@warung.com' },
