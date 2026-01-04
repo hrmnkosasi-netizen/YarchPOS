@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Product, CartItem } from '../types';
 import { MOCK_PRODUCTS, MOCK_CATEGORIES } from '../constants';
-import { Plus, Minus, Trash2, ShoppingBag, Loader2, Sparkles, ChevronDown } from 'lucide-react';
+import { Plus, Minus, Trash2, ShoppingBag, Loader2, Sparkles, ChevronDown, Search } from 'lucide-react';
 import { generateReceiptMessage } from '../services/geminiService';
 
 interface POSProps {
@@ -10,17 +10,14 @@ interface POSProps {
 
 const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
-  // Use category ID or Name, simpler to just use Name for this mockup filter
   const [selectedCategoryName, setSelectedCategoryName] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Simple flatten categories for the filter bar (taking only parent categories for simplicity)
   const parentCategories = MOCK_CATEGORIES.filter(c => !c.parentId);
 
   const filteredProducts = MOCK_PRODUCTS.filter(product => {
     const matchesCategory = selectedCategoryName === 'All' || product.category === selectedCategoryName || 
-                            // Check if product category is a sub-category of selected
                             MOCK_CATEGORIES.find(c => c.name === product.category)?.parentId === MOCK_CATEGORIES.find(c => c.name === selectedCategoryName)?.id;
     
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -55,10 +52,8 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
     if (cart.length === 0) return;
     setIsProcessing(true);
 
-    // Call Gemini for a fun receipt message
     const aiMessage = await generateReceiptMessage(cart, cartTotal);
     
-    // Simulate delay for effect
     setTimeout(() => {
       onCheckoutComplete(cart, cartTotal, aiMessage);
       setCart([]);
@@ -67,26 +62,29 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-64px)] overflow-hidden bg-gray-50">
       {/* Product Grid Area */}
-      <div className="flex-1 flex flex-col bg-gray-50 h-full overflow-hidden">
-        {/* Filters */}
-        <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-10">
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Daftar Menu</h2>
-            <input 
-              type="text" 
-              placeholder="Cari menu..." 
-              className="px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none w-full md:w-64"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Search & Categories Bar */}
+        <div className="sticky top-0 z-20 bg-white border-b border-gray-200 p-3 md:p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-4">
+            <h2 className="text-lg md:text-xl font-bold text-gray-800 hidden sm:block">Daftar Menu</h2>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                type="text" 
+                placeholder="Cari menu..." 
+                className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none w-full text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
           
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             <button 
               onClick={() => setSelectedCategoryName('All')}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === 'All' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === 'All' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               Semua
             </button>
@@ -94,94 +92,76 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
               <button 
                 key={cat.id}
                 onClick={() => setSelectedCategoryName(cat.name)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === cat.name ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                className={`px-4 py-1.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === cat.name ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               >
                 {cat.name}
               </button>
             ))}
-             {/* Render explicitly named categories from products that might not be in the mock category tree for robustness */}
-             {Array.from(new Set(MOCK_PRODUCTS.map(p => p.category)))
-                .filter(c => !parentCategories.find(pc => pc.name === c))
-                .map(c => (
-                 <button 
-                    key={c}
-                    onClick={() => setSelectedCategoryName(c)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategoryName === c ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                >
-                    {c}
-                </button>
-             ))}
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        {/* Scrollable Grid */}
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 no-scrollbar">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
             {filteredProducts.map(product => (
               <div 
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow group relative"
+                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg transition-all active:scale-95 group relative flex flex-col"
               >
-                <div className="h-32 bg-gray-200 overflow-hidden relative">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold text-gray-700">
+                <div className="aspect-square bg-gray-100 overflow-hidden relative">
+                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-700">
                     {product.category}
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 text-sm md:text-base line-clamp-2">{product.name}</h3>
-                  <p className="text-indigo-600 font-bold mt-1">Rp{product.price.toLocaleString('id-ID')}</p>
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <h3 className="font-semibold text-gray-800 text-xs md:text-sm line-clamp-2 leading-tight">{product.name}</h3>
+                  <p className="text-indigo-600 font-bold mt-1 text-sm md:text-base">Rp{product.price.toLocaleString('id-ID')}</p>
                 </div>
-                {/* Variant Indicator */}
-                {product.variants && product.variants.length > 0 && (
-                     <div className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">
-                        {product.variants.length} Varian
-                     </div>
-                )}
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Cart Sidebar */}
-      <div className="w-full lg:w-96 bg-white shadow-xl border-l border-gray-200 flex flex-col h-[40vh] lg:h-full z-20">
-        <div className="p-4 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <ShoppingBag size={20} />
-            Keranjang
+      {/* Cart Sidebar - Bottom Sheet on Mobile, Right Sidebar on Desktop */}
+      <div className="w-full lg:w-[400px] bg-white lg:border-l border-gray-200 flex flex-col h-[350px] lg:h-full z-30 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] lg:shadow-none">
+        <div className="p-4 bg-gray-50/50 border-b border-gray-200 flex items-center justify-between shrink-0">
+          <h2 className="text-base md:text-lg font-bold text-gray-800 flex items-center gap-2">
+            <ShoppingBag size={18} className="text-indigo-600" />
+            Keranjang Belanja
           </h2>
-          <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded-full">{cart.length} Item</span>
+          <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{cart.length} Item</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
           {cart.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
-              <ShoppingBag size={48} className="opacity-20" />
-              <p>Keranjang kosong</p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 opacity-50">
+              <ShoppingBag size={48} />
+              <p className="text-sm">Keranjang masih kosong</p>
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-gray-100">
-                <img src={item.image} alt="" className="w-12 h-12 rounded-md object-cover bg-gray-100" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium text-gray-800 line-clamp-1">{item.name}</h4>
-                  <p className="text-xs text-gray-500">Rp{item.price.toLocaleString('id-ID')}</p>
+              <div key={item.id} className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-50 shadow-sm">
+                <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover bg-gray-100 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs md:text-sm font-medium text-gray-800 truncate">{item.name}</h4>
+                  <p className="text-[10px] md:text-xs text-indigo-600 font-bold">Rp{item.price.toLocaleString('id-ID')}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
                   <button 
                     onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, -1); }}
-                    className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                    className="w-7 h-7 rounded-md bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-red-500 transition-colors"
                   >
-                    <Minus size={12} />
+                    <Minus size={14} />
                   </button>
-                  <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
+                  <span className="text-xs font-bold w-5 text-center">{item.quantity}</span>
                   <button 
                     onClick={(e) => { e.stopPropagation(); updateQuantity(item.id, 1); }}
-                    className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                    className="w-7 h-7 rounded-md bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 transition-colors"
                   >
-                    <Plus size={12} />
+                    <Plus size={14} />
                   </button>
                 </div>
               </div>
@@ -189,28 +169,30 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
           )}
         </div>
 
-        <div className="p-4 bg-white border-t border-gray-200 space-y-4">
-          <div className="flex justify-between items-center text-sm text-gray-500">
-            <span>Subtotal</span>
-            <span>Rp{cartTotal.toLocaleString('id-ID')}</span>
-          </div>
-          <div className="flex justify-between items-center text-xl font-bold text-gray-900">
-            <span>Total</span>
-            <span>Rp{cartTotal.toLocaleString('id-ID')}</span>
+        <div className="p-4 bg-white border-t border-gray-200 space-y-3 shrink-0">
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-xs text-gray-500">
+              <span>Subtotal</span>
+              <span>Rp{cartTotal.toLocaleString('id-ID')}</span>
+            </div>
+            <div className="flex justify-between items-center text-lg font-black text-gray-900">
+              <span>Total Akhir</span>
+              <span className="text-indigo-600">Rp{cartTotal.toLocaleString('id-ID')}</span>
+            </div>
           </div>
           
           <button
             onClick={handleCheckout}
             disabled={cart.length === 0 || isProcessing}
-            className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${
               cart.length === 0 
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-indigo-500/30'
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100'
             }`}
           >
             {isProcessing ? (
               <>
-                <Loader2 className="animate-spin" size={20} />
+                <Loader2 className="animate-spin" size={18} />
                 Memproses...
               </>
             ) : (
@@ -220,9 +202,9 @@ const POS: React.FC<POSProps> = ({ onCheckoutComplete }) => {
             )}
           </button>
           
-          <div className="text-center text-xs text-gray-400 flex items-center justify-center gap-1">
-            <Sparkles size={12} className="text-indigo-400" />
-            Didukung oleh Gemini AI
+          <div className="text-center text-[10px] text-gray-400 flex items-center justify-center gap-1">
+            <Sparkles size={10} className="text-indigo-400" />
+            Didukung Kecerdasan Gemini AI
           </div>
         </div>
       </div>

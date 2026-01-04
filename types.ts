@@ -70,10 +70,17 @@ export interface TaxServiceConfig {
 }
 
 export interface ReceiptConfig {
+  storeName: string;
   headerText: string;
   footerText: string;
+  qrCodeText: string;
+  address: string;
+  instagram: string;
+  website: string;
   showLogo: boolean;
   showSocialMedia: boolean;
+  showQRCode: boolean;
+  logoUrl?: string;
 }
 
 // Interfaces for People/Entities

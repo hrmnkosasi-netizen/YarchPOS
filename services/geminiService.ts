@@ -1,8 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { CartItem, Transaction } from '../types';
-
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+import { CartItem, Transaction } from '../types.ts';
 
 const MODEL_NAME = 'gemini-3-flash-preview';
 
@@ -11,6 +8,9 @@ const MODEL_NAME = 'gemini-3-flash-preview';
  */
 export const generateReceiptMessage = async (items: CartItem[], total: number): Promise<string> => {
   try {
+    // Instantiate inside the function to ensure the latest API key is used
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     const itemList = items.map(i => `${i.quantity}x ${i.name}`).join(', ');
     const prompt = `
       Buatlah pesan singkat, ramah, dan lucu (maksimal 2 kalimat) untuk struk pembelian pelanggan.
@@ -36,6 +36,9 @@ export const generateReceiptMessage = async (items: CartItem[], total: number): 
  */
 export const generateBusinessInsight = async (transactions: Transaction[]): Promise<string> => {
   try {
+    // Instantiate inside the function to ensure the latest API key is used
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     // Simplify data for the prompt to save tokens
     const recentSales = transactions.slice(-10).map(t => ({
       date: t.date.split('T')[0],
