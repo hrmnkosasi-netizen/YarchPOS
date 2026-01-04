@@ -1,9 +1,4 @@
-export enum Category {
-  FOOD = 'Makanan',
-  DRINK = 'Minuman',
-  SNACK = 'Cemilan',
-  DESSERT = 'Penutup'
-}
+export const POS_MODULE_INIT = true;
 
 export interface ProductVariant {
   name: string;

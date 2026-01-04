@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { CartItem, Transaction } from '../types.ts';
+import { CartItem, Transaction } from '../types';
 
 const MODEL_NAME = 'gemini-3-flash-preview';
 
@@ -8,8 +8,9 @@ const MODEL_NAME = 'gemini-3-flash-preview';
  */
 export const generateReceiptMessage = async (items: CartItem[], total: number): Promise<string> => {
   try {
-    // Instantiate inside the function to ensure the latest API key is used
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Access global process defined in index.html
+    const apiKey = (window as any).process?.env?.API_KEY || "";
+    const ai = new GoogleGenAI({ apiKey });
     
     const itemList = items.map(i => `${i.quantity}x ${i.name}`).join(', ');
     const prompt = `
@@ -36,8 +37,8 @@ export const generateReceiptMessage = async (items: CartItem[], total: number): 
  */
 export const generateBusinessInsight = async (transactions: Transaction[]): Promise<string> => {
   try {
-    // Instantiate inside the function to ensure the latest API key is used
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = (window as any).process?.env?.API_KEY || "";
+    const ai = new GoogleGenAI({ apiKey });
 
     // Simplify data for the prompt to save tokens
     const recentSales = transactions.slice(-10).map(t => ({
