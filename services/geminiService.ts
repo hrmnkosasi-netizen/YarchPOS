@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { CartItem, Transaction } from '../types';
 
@@ -8,9 +9,8 @@ const MODEL_NAME = 'gemini-3-flash-preview';
  */
 export const generateReceiptMessage = async (items: CartItem[], total: number): Promise<string> => {
   try {
-    // Access global process defined in index.html
-    const apiKey = (window as any).process?.env?.API_KEY || "";
-    const ai = new GoogleGenAI({ apiKey });
+    // Always use process.env.API_KEY directly as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
     
     const itemList = items.map(i => `${i.quantity}x ${i.name}`).join(', ');
     const prompt = `
@@ -20,11 +20,13 @@ export const generateReceiptMessage = async (items: CartItem[], total: number): 
       Gunakan Bahasa Indonesia yang gaul tapi sopan.
     `;
 
+    // Always use ai.models.generateContent to query GenAI with both the model name and prompt.
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: prompt,
     });
 
+    // The response.text property directly returns the string output (not a method).
     return response.text || "Terima kasih telah berbelanja!";
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -37,8 +39,8 @@ export const generateReceiptMessage = async (items: CartItem[], total: number): 
  */
 export const generateBusinessInsight = async (transactions: Transaction[]): Promise<string> => {
   try {
-    const apiKey = (window as any).process?.env?.API_KEY || "";
-    const ai = new GoogleGenAI({ apiKey });
+    // Always use process.env.API_KEY directly as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
     // Simplify data for the prompt to save tokens
     const recentSales = transactions.slice(-10).map(t => ({
@@ -58,11 +60,13 @@ export const generateBusinessInsight = async (transactions: Transaction[]): Prom
       Format output dengan bullet points. Jangan gunakan markdown bold (**).
     `;
 
+    // Always use ai.models.generateContent to query GenAI with both the model name and prompt.
     const response = await ai.models.generateContent({
       model: MODEL_NAME,
       contents: prompt,
     });
 
+    // The response.text property directly returns the string output (not a method).
     return response.text || "Data penjualan belum cukup untuk analisis mendalam.";
   } catch (error) {
     console.error("Gemini Insight Error:", error);

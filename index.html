@@ -1,15 +1,17 @@
+
 <!DOCTYPE html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Warung Pintar AI POS</title>
+    <title>Warung Pintar AI POS - Premium Retail</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
       body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
       }
       .no-scrollbar::-webkit-scrollbar {
           display: none;
@@ -18,12 +20,23 @@
           -ms-overflow-style: none;
           scrollbar-width: none;
       }
+      .premium-glass {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      .premium-shadow {
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+      }
+      .text-balance {
+        text-wrap: balance;
+      }
     </style>
     <!-- Shim untuk mencegah ReferenceError: process is not defined -->
     <script>
       window.process = { env: { API_KEY: "" } };
     </script>
-    <!-- Polyfill untuk Import Maps dengan atribut crossorigin -->
+    <!-- Polyfill untuk Import Maps -->
     <script async src="https://esm.sh/es-module-shims" crossorigin></script>
     <script type="importmap">
     {
@@ -42,7 +55,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Entry point utama aplikasi -->
     <script type="module" src="./index.tsx"></script>
   </body>
 </html>
